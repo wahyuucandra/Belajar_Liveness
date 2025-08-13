@@ -99,12 +99,6 @@ export default function Page() {
               </button>
             </div>
 
-            <ul className="text-sm text-gray-700 space-y-1 max-h-[38vh] sm:max-h-[50vh] lg:max-h-[60vh] overflow-auto mt-2">
-              {log.map((l, i) => (
-                <li key={i} className="whitespace-pre-wrap">{l}</li>
-              ))}
-            </ul>
-
             {result && log.length > 1 &&(
               <div className="mt-4">
                 {allResults.length > 1 ? (
@@ -116,6 +110,12 @@ export default function Page() {
                 )}
               </div>
             )}
+
+            <ul className="text-sm text-gray-700 space-y-1 max-h-[38vh] sm:max-h-[50vh] lg:max-h-[60vh] overflow-auto mt-2">
+              {log.map((l, i) => (
+                <li key={i} className="whitespace-pre-wrap">{l}</li>
+              ))}
+            </ul>
           </div>
         </div>
       </div>
