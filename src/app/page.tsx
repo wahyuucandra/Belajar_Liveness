@@ -284,8 +284,8 @@ function ExpressionChallengeModal({
                             if (type === "senyum") { score = happy; passFrame = score >= threshold; }
                             else if (type === "lihat_kanan") { const deg = -pose.yaw; score = Math.max(0, Math.min(1, deg / thresholdDeg)); passFrame = deg >= thresholdDeg; }
                             else if (type === "lihat_kiri") { const deg = pose.yaw; score = Math.max(0, Math.min(1, deg / thresholdDeg)); passFrame = deg >= thresholdDeg; }
-                            else if (type === "lihat_atas") { const deg = -pose.pitch; score = Math.max(0, Math.min(1, deg / thresholdDeg)); passFrame = deg >= thresholdDeg; }
-                            else if (type === "lihat_bawah") { const deg = pose.pitch; score = Math.max(0, Math.min(1, deg / thresholdDeg)); passFrame = deg >= thresholdDeg; }
+                            else if (type === "lihat_bawah") { const deg = -pose.pitch; score = Math.max(0, Math.min(1, deg / thresholdDeg)); passFrame = deg >= thresholdDeg; }
+                            else if (type === "lihat_atas") { const deg = pose.pitch; score = Math.max(0, Math.min(1, deg / thresholdDeg)); passFrame = deg >= thresholdDeg; }
                             else if (type === "buka_mulut") { score = Math.max(0, Math.min(1, mouthOpen / thresholdMouth)); passFrame = mouthOpen >= thresholdMouth; }
 
                             framesRef.current += 1; setFrames(framesRef.current);
