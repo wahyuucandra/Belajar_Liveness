@@ -6,7 +6,9 @@ export type ChallengeType =
   | "lihat_bawah"
   | "buka_mulut"
   | "kedip"
-  | "geleng_kepala";
+  | "geleng_kepala"
+  | "senyum_netral"
+  | "anggukan_kepala";
 
 export type ChallengeResult = {
   type: ChallengeType;

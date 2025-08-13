@@ -53,6 +53,7 @@ export default function Page() {
               }}
             >
               <option value="senyum">Senyum</option>
+              <option value="senyum_netral">Senyum Netral</option>
               <option value="lihat_kanan">Lihat Kanan</option>
               <option value="lihat_kiri">Lihat Kiri</option>
               <option value="lihat_atas">Lihat Atas</option>
@@ -60,6 +61,7 @@ export default function Page() {
               <option value="buka_mulut">Buka Mulut</option>
               <option value="kedip">Kedip</option>
               <option value="geleng_kepala">Geleng Kepala</option>
+              <option value="anggukan_kepala">Anggukan Kepala</option>
             </select>
 
             <button
@@ -124,7 +126,7 @@ export default function Page() {
         <ExpressionChallengeModal
           key={keyForModal}
           type={queue.length ? queue[currentIndex] : selected}
-          durationSec={4}
+          durationSec={5}
           threshold={0.8}
           thresholdDeg={18}
           thresholdMouth={0.3}
