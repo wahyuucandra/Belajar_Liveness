@@ -6,20 +6,7 @@ import { eyeAspectRatio, LEFT_EYE, RIGHT_EYE } from "@/utils/helpers/landmarks";
 import { estimateHeadPoseFrom68 } from "@/utils/helpers/pose";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { VideoHUD } from "../molecules/VideoHUD";
-
-async function getCameraStream(preferFront = true): Promise<MediaStream> {
-  const errHttps = !window.isSecureContext ? new Error("Akses kamera butuh HTTPS.") : null;
-  const nav: any = navigator as any;
-  const gum = nav.mediaDevices?.getUserMedia?.bind(nav.mediaDevices);
-  const constraints1 = { video: { facingMode: preferFront ? "user" : "environment" }, audio: false } as MediaStreamConstraints;
-  const constraints2 = { video: true, audio: false } as MediaStreamConstraints;
-  if (!gum) throw errHttps || new Error("Browser tidak mendukung getUserMedia.");
-  try {
-    return await gum(constraints1);
-  } catch {
-    return await gum(constraints2);
-  }
-}
+import { useCamera } from "@/providers/CameraProvider";
 
 export function ExpressionChallengeModal({
   type,
@@ -72,6 +59,8 @@ export function ExpressionChallengeModal({
   const started = useRef(false);
   const finishedRef = useRef(false);
 
+  const { ensureStream } = useCamera();
+
   useEffect(() => {
     if (!open || started.current || !ready || !faceapi || !options) return;
     started.current = true;
@@ -85,7 +74,7 @@ export function ExpressionChallengeModal({
       const v = videoRef.current!;
       v.setAttribute("playsinline", "true");
       v.muted = true; v.autoplay = true;
-      stream = await getCameraStream(true);
+      stream = await ensureStream(true);
       loadedMeta.current = false;
       v.onloadedmetadata = async () => { loadedMeta.current = true; try { await v.play(); } catch {} };
       (v as any).srcObject = stream as any;
@@ -215,6 +204,7 @@ export function ExpressionChallengeModal({
     const stop = () => {
       if (raf) cancelAnimationFrame(raf);
       if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+      if (videoRef.current) (videoRef.current as any).srcObject = null;
       started.current = false;
     };
 
