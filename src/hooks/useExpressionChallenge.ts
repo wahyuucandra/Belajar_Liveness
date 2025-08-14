@@ -78,6 +78,30 @@ export function useExpressionChallenge(
     let stream: MediaStream | null = null;
     let startAt = 0;
 
+    const stop = () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      const v = videoRef.current;
+      if (v) {
+        try { v.pause(); } catch {}
+        (v as any).srcObject = null;
+      }
+
+      if (stream) {
+        try {
+          stream.getTracks().forEach(t => {
+            try { t.stop(); } catch {}
+          });
+        } finally {
+          stream = null;
+        }
+      }
+      started.current = false; 
+    };
+
+    const teardown = () => {
+      stop();
+    };
+
     const start = async () => {
       const v = videoRef.current!;
       v.setAttribute("playsinline", "true");
@@ -87,13 +111,9 @@ export function useExpressionChallenge(
       loadedMeta.current = false;
       v.onloadedmetadata = async () => {
         loadedMeta.current = true;
-        try {
-          await v.play();
-        } catch {}
+        try { await v.play(); } catch {}
       };
-      v.oncanplay = () => {
-        loadedMeta.current = true;
-      };
+      v.oncanplay = () => { loadedMeta.current = true; };
       (v as any).srcObject = stream as any;
 
       framesRef.current = matchedRef.current = bestScoreRef.current = 0;
@@ -160,10 +180,7 @@ export function useExpressionChallenge(
           }
 
           if (main) {
-            const pts = main.landmarks.positions.map((p: any) => ({
-              x: p.x,
-              y: p.y
-            })) as Point[];
+            const pts = main.landmarks.positions.map((p: any) => ({ x: p.x, y: p.y })) as Point[];
             const pose = estimateHeadPoseFrom68(pts);
 
             const fr = detectForType(
@@ -190,9 +207,7 @@ export function useExpressionChallenge(
               const yawRange = maxYaw - minYaw;
               fr.score = Math.min(1, yawRange / (thresholds.thresholdDeg * 2));
               fr.passFrame = yawRange >= thresholds.thresholdDeg * 2;
-              fr.hint = fr.passFrame
-                ? "Rentang cukup. Berhenti."
-                : "Goyangkan kepala kiri↔kanan sedikit lebih lebar.";
+              fr.hint = fr.passFrame ? "Rentang cukup. Berhenti." : "Goyangkan kepala kiri↔kanan sedikit lebih lebar.";
             }
 
             if (type === "anggukan_kepala") {
@@ -201,46 +216,23 @@ export function useExpressionChallenge(
               const pRange = maxP - minP;
               fr.score = Math.min(1, pRange / (thresholds.thresholdDeg * 2));
               fr.passFrame = pRange >= thresholds.thresholdDeg * 2;
-              fr.hint = fr.passFrame
-                ? "Rentang cukup. Berhenti."
-                : "Anggukkan kepala sedikit lebih lebar.";
+              fr.hint = fr.passFrame ? "Rentang cukup. Berhenti." : "Anggukkan kepala sedikit lebih lebar.";
             }
 
             if (type === "senyum_netral") {
               const isSmile = fr.score >= thresholds.threshold;
-              if (isSmile && !smileToggle.current) {
-                smileToggle.current = true;
-              }
+              if (isSmile && !smileToggle.current) smileToggle.current = true;
               if (!isSmile && smileToggle.current) {
                 smileToggle.current = false;
                 smileCyclesRef.current += 1;
               }
               fr.passFrame = smileCyclesRef.current >= 2;
-              fr.hint = fr.passFrame
-                ? "Dua siklus terdeteksi."
-                : "Senyum lalu kembali netral (2x).";
+              fr.hint = fr.passFrame ? "Dua siklus terdeteksi." : "Senyum lalu kembali netral (2x).";
             }
 
             framesRef.current++;
-            if (fr.passFrame) {
-              matchedRef.current++;
-
-              finishedRef.current = true;
-              opts.onResult({
-                type,
-                success: true,
-                score: bestScoreRef.current,
-                frames: framesRef.current,
-                matchedFrames: matchedRef.current
-              });
-              opts.onClose("auto");
-              stop();
-              return;
-            }
-
-            if (fr.score > bestScoreRef.current) {
-              bestScoreRef.current = fr.score;
-            }
+            if (fr.passFrame) matchedRef.current++;
+            if (fr.score > bestScoreRef.current) bestScoreRef.current = fr.score;
 
             setState({
               frames: framesRef.current,
@@ -254,16 +246,10 @@ export function useExpressionChallenge(
 
             if (opts.onLog) {
               const dbg = fr.debug
-                ? ` EAR=${(fr.debug.ear ?? 0).toFixed(3)} BL=${(
-                    fr.debug.baseline ?? 0
-                  ).toFixed(3)}`
+                ? ` EAR=${(fr.debug.ear ?? 0).toFixed(3)} BL=${(fr.debug.baseline ?? 0).toFixed(3)}`
                 : "";
               opts.onLog(
-                `Frame#${framesRef.current} yaw=${pose.yaw.toFixed(
-                  1
-                )} pitch=${pose.pitch.toFixed(1)} score=${fr.score.toFixed(
-                  2
-                )} ${fr.passFrame ? "✓" : ""}${dbg}`
+                `Frame#${framesRef.current} yaw=${pose.yaw.toFixed(1)} pitch=${pose.pitch.toFixed(1)} score=${fr.score.toFixed(2)} ${fr.passFrame ? "✓" : ""}${dbg}`
               );
             }
           }
@@ -275,15 +261,6 @@ export function useExpressionChallenge(
       };
 
       rafRef.current = requestAnimationFrame(tick);
-    };
-
-    const stop = () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      if (videoRef.current) (videoRef.current as any).srcObject = null;
-    };
-
-    const teardown = () => {
-      stop();
     };
 
     start();
