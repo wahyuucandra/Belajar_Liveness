@@ -1,5 +1,5 @@
 "use client";
-import React, { useMemo } from "react";
+import React from "react";
 import { ChallengeResult, ChallengeType } from "@/interface/challenge";
 import { instructionLines, readableType } from "@/utils/helpers/challengeHelpers";
 import { VideoHUD } from "@/components/molecules/VideoHUD";
@@ -46,18 +46,32 @@ export function ExpressionChallengeModal({
 
   return (
     <OverlayShell onCancel={() => onClose("cancel")} title={<></>}>
-      <video ref={videoRef} className="absolute inset-0 w-full h-full object-cover" muted playsInline autoPlay />
+      <video
+        ref={videoRef}
+        className="absolute inset-0 w-full h-full object-cover z-0"
+        muted
+        playsInline
+        autoPlay
+      />
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 p-4 md:p-6 text-white">
-        <div className="inline-flex items-center gap-2 rounded-full bg-black/50 px-4 py-2 backdrop-blur">
+      <div className="absolute inset-x-0 top-0 p-4 md:p-6 text-white z-30">
+        <div className="inline-flex items-center gap-2 rounded-full bg-black/50 px-4 py-2 backdrop-blur pointer-events-none">
           <span className="text-sm/5 opacity-80">Verifikasi</span>
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
           <span className="font-semibold">{readableType(type)}</span>
         </div>
-        <InstructionPanel type={type} umum={umum} spesifik={spesifik} hint={state.hint} />
+
+        <div className="pointer-events-auto">
+          <InstructionPanel
+            type={type}
+            umum={umum}
+            spesifik={spesifik}
+            hint={state.hint}
+          />
+        </div>
       </div>
 
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 z-10 pointer-events-none">
         <VideoHUD countdown={state.countdown} bestScore={state.bestScore} />
       </div>
 
@@ -72,14 +86,19 @@ export function ExpressionChallengeModal({
         baselineEar={state.baselineEar}
       />
 
-      <div className="absolute inset-x-0 bottom-0">
+      <div className="absolute inset-x-0 bottom-0 z-30">
         <div className="mx-auto max-w-6xl p-4 md:p-6">
           <div className="flex items-center justify-between gap-3">
-            <div className="hidden md:flex items-center gap-2 text-white/80 text-sm">
+            <div className="flex items-center gap-2 text-white/80 text-sm">
               <span className="inline-flex h-2 w-2 rounded-full bg-emerald-400/90 animate-pulse" />
               <span>Kamera aktif selama challenge</span>
             </div>
-            <button onClick={() => onClose("cancel")} className="px-4 py-2 rounded-xl bg-white/90 hover:bg-white text-gray-900 shadow">Batal</button>
+            <button
+              onClick={() => onClose("cancel")}
+              className="px-4 py-2 rounded-xl bg-white/90 hover:bg-white text-gray-900 shadow"
+            >
+              Batal
+            </button>
           </div>
         </div>
       </div>
