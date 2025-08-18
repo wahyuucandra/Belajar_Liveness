@@ -1,184 +1,571 @@
 "use client";
-import { Badge } from "@/components/atoms/Badge";
-import ChallengeDetail from "@/components/molecules/ChallengeDetail";
-import { ExpressionChallengeModal } from "@/components/organisms/ExpressionChallengeModal";
-import { ChallengeResult, ChallengeType } from "@/interface/challenge";
-import { getRandomChallenges, readableType } from "@/utils/helpers/challengeHelpers";
+
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  CheckCircle,
+  Loader2,
+  Upload,
+  XCircle,
+  RotateCcw,
+  Save,
+} from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import React, { useMemo, useState } from "react";
+import { useState, useRef } from "react";
+import SignatureCanvas from "react-signature-canvas";
 
-export default function Page() {
-  const [selected, setSelected] = useState<ChallengeType>("senyum");
-  const [open, setOpen] = useState(false);
-  const [result, setResult] = useState<null | ChallengeResult>(null);
-  const [log, setLog] = useState<string[]>([]);
+interface ApiResponse {
+  [key: string]: any;
+}
 
-  const [queue, setQueue] = useState<ChallengeType[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [allResults, setAllResults] = useState<ChallengeResult[]>([]);
-
-  const keyForModal = useMemo(
-    () => (queue.length ? `${queue[currentIndex]}-${currentIndex}` : `${selected}-single`),
-    [queue, currentIndex, selected]
+export default function FileUploadTest() {
+  const [loading, setLoading] = useState(false);
+  const [response, setResponse] = useState<ApiResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [apiBaseUrl, setApiBaseUrl] = useState(
+    process.env.NEXT_PUBLIC_API_BASE_URL ||
+      "https://02c6589b1c28.ngrok-free.app"
   );
-
-  const reset = () => { setLog([]); setResult(null); setAllResults([]); };
+  const [activeTab, setActiveTab] = useState("quality");
+  const [savedSignature, setSavedSignature] = useState<string | null>(null);
   const router = useRouter();
+  const signatureRef = useRef<SignatureCanvas>(null);
 
-  const start = () => { reset(); setQueue([]); setCurrentIndex(0); setOpen(true);};
-  const startTriple = () => { reset(); setQueue(getRandomChallenges(3)); setCurrentIndex(0); setOpen(true);};
-  const startN = (n: number) => { reset(); setQueue(getRandomChallenges(n)); setCurrentIndex(0); setOpen(true);};
+  const handleFileUpload = async (
+    endpoint: string,
+    files: { [key: string]: File },
+    params: { [key: string]: string | number | boolean } = {}
+  ) => {
+    setLoading(true);
+    setError(null);
+    setResponse(null);
 
-  return (
-    <div className="min-h-dvh bg-gray-50 text-gray-900">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        <div className="space-y-1">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Face Challenge (Popup)</h1>
-          <p className="text-sm sm:text-base text-gray-600">
-            Pilih challenge, lalu mulai. Kamera aktif hanya saat popup terbuka.
-          </p>
+    try {
+      const formData = new FormData();
+
+      // Add files to form data
+      Object.entries(files).forEach(([key, file]) => {
+        formData.append(key, file);
+      });
+
+      // Build query parameters
+      const queryParams = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        queryParams.append(key, value.toString());
+      });
+
+      const url = `${apiBaseUrl}${endpoint}${
+        queryParams.toString() ? `?${queryParams.toString()}` : ""
+      }`;
+
+      const res = await fetch(url, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
+      const data = await res.json();
+      setResponse(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const QualityCheckTab = () => {
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [blurThr, setBlurThr] = useState(120);
+    const [darkThr, setDarkThr] = useState(70);
+    const [contrastThr, setContrastThr] = useState(35);
+    const [returnOverlay, setReturnOverlay] = useState(false);
+
+    const handleSubmit = () => {
+      if (!imageFile) {
+        setError("Please select an image file");
+        return;
+      }
+      handleFileUpload(
+        "/quality",
+        { image: imageFile },
+        {
+          blur_thr: blurThr,
+          dark_thr: darkThr,
+          contrast_thr: contrastThr,
+          return_overlay: returnOverlay,
+        }
+      );
+    };
+
+    return (
+      <div className="space-y-4">
+        <div>
+          <Label htmlFor="image">Image File</Label>
+          <Input
+            id="image"
+            type="file"
+            accept="image/*"
+            onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+          />
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-[auto,1fr] items-start">
-          <label htmlFor="challenge" className="text-sm pt-2 sm:pt-0">Pilih challenge:</label>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
-            <select
-              id="challenge"
-              aria-label="Pilih jenis challenge"
-              className="px-3 py-2 rounded-xl bg-white shadow border text-sm w-full"
-              value={selected}
-              onChange={(e) => {
-                const val = e.target.value as ChallengeType;
-                setSelected(val);
-                setLog([]);
-                setResult(null);
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="blur-thr">Blur Threshold</Label>
+            <Input
+              id="blur-thr"
+              type="number"
+              value={blurThr}
+              onChange={(e) => setBlurThr(Number(e.target.value))}
+            />
+          </div>
+          <div>
+            <Label htmlFor="dark-thr">Dark Threshold</Label>
+            <Input
+              id="dark-thr"
+              type="number"
+              value={darkThr}
+              onChange={(e) => setDarkThr(Number(e.target.value))}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="contrast-thr">Contrast Threshold</Label>
+            <Input
+              id="contrast-thr"
+              type="number"
+              value={contrastThr}
+              onChange={(e) => setContrastThr(Number(e.target.value))}
+            />
+          </div>
+          <div className="flex items-center space-x-2">
+            <input
+              id="return-overlay"
+              type="checkbox"
+              checked={returnOverlay}
+              onChange={(e) => setReturnOverlay(e.target.checked)}
+            />
+            <Label htmlFor="return-overlay">Return Overlay</Label>
+          </div>
+        </div>
+
+        <Button
+          onClick={handleSubmit}
+          disabled={loading || !imageFile}
+          className="w-full"
+        >
+          {loading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Upload className="mr-2 h-4 w-4" />
+          )}
+          Check Quality
+        </Button>
+      </div>
+    );
+  };
+
+  const SignatureExtractTab = () => {
+    const [ktpFile, setKtpFile] = useState<File | null>(null);
+    const [cropBottom, setCropBottom] = useState(0.45);
+    const [minAreaRatio, setMinAreaRatio] = useState(0.01);
+
+    const handleSubmit = () => {
+      if (!ktpFile) {
+        setError("Please select a KTP file");
+        return;
+      }
+      handleFileUpload(
+        "/signature",
+        { ktp: ktpFile },
+        {
+          crop_bottom: cropBottom,
+          min_area_ratio: minAreaRatio,
+        }
+      );
+    };
+
+    return (
+      <div className="space-y-4">
+        <div>
+          <Label htmlFor="ktp">KTP File</Label>
+          <Input
+            id="ktp"
+            type="file"
+            accept="image/*"
+            onChange={(e) => setKtpFile(e.target.files?.[0] || null)}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="crop-bottom">Crop Bottom</Label>
+            <Input
+              id="crop-bottom"
+              type="number"
+              step="0.01"
+              value={cropBottom}
+              onChange={(e) => setCropBottom(Number(e.target.value))}
+            />
+          </div>
+          <div>
+            <Label htmlFor="min-area-ratio">Min Area Ratio</Label>
+            <Input
+              id="min-area-ratio"
+              type="number"
+              step="0.001"
+              value={minAreaRatio}
+              onChange={(e) => setMinAreaRatio(Number(e.target.value))}
+            />
+          </div>
+        </div>
+
+        <Button
+          onClick={handleSubmit}
+          disabled={loading || !ktpFile}
+          className="w-full"
+        >
+          {loading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Upload className="mr-2 h-4 w-4" />
+          )}
+          Extract Signature
+        </Button>
+      </div>
+    );
+  };
+
+  const FaceCompareTab = () => {
+    const [selfieFile, setSelfieFile] = useState<File | null>(null);
+    const [idImageFile, setIdImageFile] = useState<File | null>(null);
+    const [threshold, setThreshold] = useState(0.42);
+
+    const handleSubmit = () => {
+      if (!selfieFile || !idImageFile) {
+        setError("Please select both selfie and ID image files");
+        return;
+      }
+      handleFileUpload(
+        "/face-compare",
+        { selfie: selfieFile, idimage: idImageFile },
+        {
+          threshold: threshold,
+        }
+      );
+    };
+
+    return (
+      <div className="space-y-4">
+        <div>
+          <Label htmlFor="selfie">Selfie File</Label>
+          <Input
+            id="selfie"
+            type="file"
+            accept="image/*"
+            onChange={(e) => setSelfieFile(e.target.files?.[0] || null)}
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="idimage">ID Image File</Label>
+          <Input
+            id="idimage"
+            type="file"
+            accept="image/*"
+            onChange={(e) => setIdImageFile(e.target.files?.[0] || null)}
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="threshold">Threshold</Label>
+          <Input
+            id="threshold"
+            type="number"
+            step="0.01"
+            value={threshold}
+            onChange={(e) => setThreshold(Number(e.target.value))}
+          />
+        </div>
+
+        <Button
+          onClick={handleSubmit}
+          disabled={loading || !selfieFile || !idImageFile}
+          className="w-full"
+        >
+          {loading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Upload className="mr-2 h-4 w-4" />
+          )}
+          Compare Faces
+        </Button>
+      </div>
+    );
+  };
+
+  const SignatureDrawTab = () => {
+    const handleReset = () => {
+      if (signatureRef.current) {
+        signatureRef.current.clear();
+      }
+    };
+
+    const handleSave = () => {
+      if (signatureRef.current) {
+        const signatureData = signatureRef.current.toDataURL();
+        setSavedSignature(signatureData);
+      }
+    };
+
+    return (
+      <div className="space-y-4">
+        <div>
+          <Label>Draw Your Signature</Label>
+          <div className="border border-gray-300 rounded-lg p-2 bg-white relative w-full h-[200px]">
+            <SignatureCanvas
+              ref={signatureRef}
+              backgroundColor="rgb(255, 255, 255)"
+              penColor="black"
+              minWidth={1}
+              maxWidth={3}
+              canvasProps={{
+                style: {
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "100%",
+                },
               }}
-            >
-              <option value="senyum">Senyum</option>
-              <option value="senyum_netral">Senyum Netral</option>
-              <option value="lihat_kanan">Lihat Kanan</option>
-              <option value="lihat_kiri">Lihat Kiri</option>
-              <option value="lihat_atas">Lihat Atas</option>
-              <option value="lihat_bawah">Lihat Bawah</option>
-              <option value="buka_mulut">Buka Mulut</option>
-              <option value="kedip">Kedip</option>
-              <option value="geleng_kepala">Geleng Kepala</option>
-              <option value="anggukan_kepala">Anggukan Kepala</option>
-            </select>
-
-            <button
-              className="w-full px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700"
-              onClick={start}
-            >
-              Mulai Challenge
-            </button>
-            <button
-              className="w-full px-4 py-2 rounded-xl bg-green-600 text-white hover:bg-green-700"
-              onClick={startTriple}
-            >
-              3 Challenge Acak
-            </button>
-            <button
-              className="w-full px-4 py-2 rounded-xl bg-purple-600 text-white hover:bg-purple-700"
-              onClick={() => startN(5)}
-            >
-              5 Challenge Acak
-            </button>
-            <button
-              className="w-full px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700"
-              onClick={() => router.push("/ekyc1")}
-            >
-              EKYC 1
-            </button>
-            <button
-              className="w-full px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700"
-              onClick={() => router.push("/ekyc")}
-            >
-              EKYC 2
-            </button>
-            <button
-              className="w-full px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700"
-              onClick={() => router.push("/signature-pad")}
-            >
-              Signature Pad
-            </button>
+            />
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-          <div className="rounded-2xl border border-dashed border-gray-200 bg-white/40 min-h-[140px] flex items-center justify-center text-gray-400 text-sm">
-            Klik “Mulai Challenge” untuk membuka kamera
-          </div>
-
-          <div className="bg-white rounded-2xl shadow p-4 sm:p-5">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-lg">Log</h3>
-              <button
-                className="text-xs px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200"
-                onClick={() => setLog([])}
-              >
-                Bersihkan
-              </button>
-            </div>
-
-            {result && log.length > 1 &&(
-              <div className="mt-4">
-                {allResults.length > 1 ? (
-                  ChallengeDetail(allResults)
-                ) : (
-                  <Badge variant={result.success ? "success" : "error"}>
-                    Hasil {readableType(result.type)} → {result.success ? "Lolos" : "Gagal"} — score {result.score.toFixed(2)}
-                  </Badge>
-                )}
-              </div>
-            )}
-
-            <ul className="text-sm text-gray-700 space-y-1 max-h-[38vh] sm:max-h-[50vh] lg:max-h-[60vh] overflow-auto mt-2">
-              {log.map((l, i) => (
-                <li key={i} className="whitespace-pre-wrap">{l}</li>
-              ))}
-            </ul>
-          </div>
+        <div className="flex gap-4">
+          <Button onClick={handleReset} variant="outline" className="flex-1">
+            <RotateCcw className="mr-2 h-4 w-4" />
+            Reset
+          </Button>
+          <Button onClick={handleSave} className="flex-1">
+            <Save className="mr-2 h-4 w-4" />
+            Save Signature
+          </Button>
         </div>
       </div>
+    );
+  };
 
-      {open && (
-        <ExpressionChallengeModal
-          key={keyForModal}
-          type={queue.length ? queue[currentIndex] : selected}
-          durationSec={5}
-          threshold={0.8}
-          thresholdDeg={18}
-          thresholdMouth={0.3}
-          onClose={(reason) => {
-            if (reason === "cancel") { setOpen(false); setQueue([]); setCurrentIndex(0); return; }
-            setOpen(false);
-          }}
-          onResult={(r) => {
-            setLog((L) => [
-              `Selesai: ${readableType(r.type)} — ${r.success ? "LOLOS" : "GAGAL"} | bestScore=${r.score.toFixed(2)} | frames=${r.frames} | matched=${r.matchedFrames}`,
-              ...L,
-            ]);
+  return (
+    <div className="container mx-auto p-6 max-w-4xl">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold mb-2">E-Contract Vision API Test</h1>
+        <p className="text-muted-foreground">
+          Test file upload endpoints for quality check, signature extraction,
+          and face comparison
+        </p>
+      </div>
 
-            if (queue.length) {
-              setAllResults((prev) => {
-                const updated = [...prev, r];
-                if (currentIndex < queue.length - 1) {
-                  setCurrentIndex(currentIndex + 1);
-                  setTimeout(() => setOpen(true), 0);
-                } else {
-                  const finalSuccess = updated.every((ch) => ch.success);
-                  setResult({ type: r.type, success: finalSuccess, score: 0, frames: 0, matchedFrames: 0 });
-                  setOpen(false); setQueue([]); setCurrentIndex(0);
-                }
-                return updated;
-              });
-            } else {
-              setResult(r);
-            }
-          }}
-          onLog={(line) => setLog((L) => [line, ...L])}
-        />
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>API Configuration</CardTitle>
+          <CardDescription>Set the base URL for the API</CardDescription>
+          <Button
+            className="text-white"
+            onClick={() => {
+              router.push("/face-detection");
+            }}
+          >
+            Go to Face Detection
+          </Button>
+          <Button
+            className="text-white"
+            onClick={() => {
+              router.push("/liveness");
+            }}
+          >
+            Go to Liveness Check
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <div>
+            <Label className="mb-2" htmlFor="api-url">
+              API Base URL
+            </Label>
+            <Input
+              id="api-url"
+              value={apiBaseUrl}
+              onChange={(e) => setApiBaseUrl(e.target.value)}
+              placeholder="http://localhost:8000"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Tabs
+        defaultValue="quality"
+        className="mb-6"
+        value={activeTab}
+        onValueChange={setActiveTab}
+      >
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="quality">Quality Check</TabsTrigger>
+          <TabsTrigger value="signature">Signature Extract</TabsTrigger>
+          <TabsTrigger value="face-compare">Face Compare</TabsTrigger>
+          <TabsTrigger value="signature-draw">Draw Signature</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="quality" key="quality">
+          <Card>
+            <CardHeader>
+              <CardTitle>Quality Check</CardTitle>
+              <CardDescription>
+                Upload an image to check its quality (blur, darkness, contrast)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <QualityCheckTab />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="signature" key="signature">
+          <Card>
+            <CardHeader>
+              <CardTitle>Signature Extract</CardTitle>
+              <CardDescription>
+                Upload a KTP document to extract signature
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SignatureExtractTab />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="face-compare" key="face-compare">
+          <Card>
+            <CardHeader>
+              <CardTitle>Face Compare</CardTitle>
+              <CardDescription>
+                Upload selfie and ID image to compare faces
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FaceCompareTab />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="signature-draw" key="signature-draw">
+          <Card>
+            <CardHeader>
+              <CardTitle>Draw Signature</CardTitle>
+              <CardDescription>
+                Draw your signature using the canvas below
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SignatureDrawTab />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {error && (
+        <Alert className="mb-6 border-red-200 bg-red-50">
+          <XCircle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-800">{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {response && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              API Response
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <pre className="bg-gray-50 p-4 rounded-lg overflow-auto text-sm">
+              {JSON.stringify(response, null, 2)}
+            </pre>
+          </CardContent>
+        </Card>
+      )}
+      {activeTab === "signature" && response?.signature_png_b64 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              Signature
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Image
+              src={`data:image/png;base64,${response.signature_png_b64}`}
+              alt="Signature"
+              className="w-full max-w-xs"
+              width={500}
+              height={500}
+            />
+          </CardContent>
+        </Card>
+      )}
+      {activeTab === "quality" && response?.overlay_png_b64 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              Overlay
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Image
+              src={`data:image/png;base64,${response.overlay_png_b64}`}
+              alt="Overlay"
+              className="w-full max-w-xs"
+              width={500}
+              height={500}
+            />
+          </CardContent>
+        </Card>
+      )}
+      {activeTab === "signature-draw" && savedSignature && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              Saved Signature
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Image
+              src={savedSignature}
+              alt="Saved Signature"
+              className="w-full max-w-xs border border-gray-300 rounded-lg"
+              width={500}
+              height={200}
+            />
+          </CardContent>
+        </Card>
       )}
     </div>
   );
