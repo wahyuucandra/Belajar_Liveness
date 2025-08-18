@@ -35,7 +35,7 @@ export default function FileUploadTest() {
   const [error, setError] = useState<string | null>(null);
   const [apiBaseUrl, setApiBaseUrl] = useState(
     process.env.NEXT_PUBLIC_API_BASE_URL ||
-      "https://02c6589b1c28.ngrok-free.app"
+      "https://econtract-dev.berijalan.id/engine"
   );
   const [activeTab, setActiveTab] = useState("quality");
   const [savedSignature, setSavedSignature] = useState<string | null>(null);
