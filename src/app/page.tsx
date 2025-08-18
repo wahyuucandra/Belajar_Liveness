@@ -387,20 +387,12 @@ export default function FileUploadTest() {
           <CardTitle>API Configuration</CardTitle>
           <CardDescription>Set the base URL for the API</CardDescription>
           <Button
-            className="text-white"
+            className="text-white bg-blue-600 hover:bg-blue-700"
             onClick={() => {
-              router.push("/face-detection");
+              router.push("/menu");
             }}
           >
-            Go to Face Detection
-          </Button>
-          <Button
-            className="text-white"
-            onClick={() => {
-              router.push("/liveness");
-            }}
-          >
-            Go to Liveness Check
+            Go to Menu
           </Button>
         </CardHeader>
         <CardContent>
