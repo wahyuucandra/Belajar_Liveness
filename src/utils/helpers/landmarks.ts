@@ -8,3 +8,4 @@ export function eyeAspectRatio(pts: Point[], idx: number[]) {
   const dist = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y);
   return (dist(p[1], p[5]) + dist(p[2], p[4])) / (2 * dist(p[0], p[3]) || 1);
 }
+

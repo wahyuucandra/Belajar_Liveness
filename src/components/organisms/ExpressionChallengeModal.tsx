@@ -78,7 +78,6 @@ export function ExpressionChallengeModal({
       <BottomInfo
         ready={!!ready}
         error={error}
-        showStats
         bestScore={state.bestScore}
         frames={state.frames}
         matched={state.matched}

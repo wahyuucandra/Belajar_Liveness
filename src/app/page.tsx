@@ -4,6 +4,7 @@ import ChallengeDetail from "@/components/molecules/ChallengeDetail";
 import { ExpressionChallengeModal } from "@/components/organisms/ExpressionChallengeModal";
 import { ChallengeResult, ChallengeType } from "@/interface/challenge";
 import { getRandomChallenges, readableType } from "@/utils/helpers/challengeHelpers";
+import { useRouter } from "next/navigation";
 import React, { useMemo, useState } from "react";
 
 export default function Page() {
@@ -22,6 +23,7 @@ export default function Page() {
   );
 
   const reset = () => { setLog([]); setResult(null); setAllResults([]); };
+  const router = useRouter();
 
   const start = () => { reset(); setQueue([]); setCurrentIndex(0); setOpen(true);};
   const startTriple = () => { reset(); setQueue(getRandomChallenges(3)); setCurrentIndex(0); setOpen(true);};
@@ -81,6 +83,24 @@ export default function Page() {
               onClick={() => startN(5)}
             >
               5 Challenge Acak
+            </button>
+            <button
+              className="w-full px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700"
+              onClick={() => router.push("/ekyc1")}
+            >
+              EKYC 1
+            </button>
+            <button
+              className="w-full px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700"
+              onClick={() => router.push("/ekyc")}
+            >
+              EKYC 2
+            </button>
+            <button
+              className="w-full px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700"
+              onClick={() => router.push("/signature-pad")}
+            >
+              Signature Pad
             </button>
           </div>
         </div>

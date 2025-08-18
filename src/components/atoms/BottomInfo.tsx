@@ -3,7 +3,6 @@
 export function BottomInfo({
   ready,
   error,
-  showStats,
   bestScore,
   frames,
   matched,
@@ -12,7 +11,6 @@ export function BottomInfo({
 }: {
   ready: boolean;
   error?: string | null;
-  showStats?: boolean;
   bestScore: number;
   frames: number;
   matched: number;
