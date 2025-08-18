@@ -1,26 +1,173 @@
 @import "tailwindcss";
 
+/* =========================================================
+   Semantic design tokens (lebih lembut & enak dibaca)
+   ========================================================= */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  /* Base (Light) — Indigo Aurora */
+  --background: #fbfbfe;           /* off-white dengan hint ungu */
+  --foreground: #0f172a;           /* slate-900 */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --card: #ffffff;
+  --muted: #f5f7fb;                /* subtle blue/gray */
+  --border: #e5e7eb;               /* slate-200 */
+
+  /* Brand */
+  --brand-400: #818cf8;            /* indigo-400 */
+  --brand-500: #6366f1;            /* indigo-500 */
+  --brand-600: #4f46e5;            /* indigo-600 */
+
+  /* Accents */
+  --ring: var(--brand-500);
+  --focus: color-mix(in oklab, var(--brand-400) 70%, white);
+
+  /* Radii & fonts */
+  --radius: 1rem;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
+/* =========================================================
+   Theme mapping untuk Tailwind CSS v4 @theme inline
+   ========================================================= */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+
+  --radius: var(--radius);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+/* =========================================================
+   Dark mode — kontras tinggi tapi tetap lembut
+   ========================================================= */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0b1020;         /* deep navy */
+    --foreground: #e6e9f2;         /* cool gray-100 */
+
+    --card: #0f1530;               /* navy-900 */
+    --muted: #0d1228;              /* panel */
+    --border: #212a4a;             /* navy-700 */
+
+    --brand-400: #8da2fb;
+    --brand-500: #7c8cfb;
+    --brand-600: #6674f1;
+
+    --ring: var(--brand-500);
+    --focus: color-mix(in oklab, var(--brand-400) 35%, white);
   }
 }
 
+/* =========================================================
+   Preset tambahan (opsional):
+   Aktifkan dengan <html data-theme="ocean"> atau "emerald"
+   ========================================================= */
+:root[data-theme="ocean"] {
+  --brand-400: #22c5df;
+  --brand-500: #06b6d4;            /* cyan-500 */
+  --brand-600: #0891b2;            /* cyan-700 */
+  --ring: var(--brand-500);
+  --focus: color-mix(in oklab, var(--brand-400) 65%, white);
+}
+:root[data-theme="emerald"] {
+  --brand-400: #34d399;            /* emerald-400 */
+  --brand-500: #10b981;            /* emerald-500 */
+  --brand-600: #059669;            /* emerald-600 */
+  --ring: var(--brand-500);
+  --focus: color-mix(in oklab, var(--brand-400) 65%, white);
+}
+
+/* =========================================================
+   Global resets & base
+   ========================================================= */
+* { border-color: var(--color-border); }
+
+html, body { height: 100%; }
+
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--color-background);
+  color: var(--color-foreground);
   font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* =========================================================
+   Background gradient — subtle & brand-aware
+   ========================================================= */
+.app-bg {
+  background:
+    radial-gradient(900px 400px at 10% -10%,
+      color-mix(in oklab, var(--brand-400) 18%, transparent), transparent),
+    radial-gradient(900px 400px at 110% 0%,
+      color-mix(in oklab, var(--brand-500) 12%, transparent), transparent),
+    linear-gradient(to bottom, #ffffff, #f6f8ff 40%, #eef2ff 100%);
+}
+@media (prefers-color-scheme: dark) {
+  .app-bg {
+    background:
+      radial-gradient(900px 400px at 10% -10%,
+        color-mix(in oklab, var(--brand-600) 25%, transparent), transparent),
+      radial-gradient(900px 400px at 110% 0%,
+        color-mix(in oklab, var(--brand-500) 18%, transparent), transparent),
+      linear-gradient(180deg, #0b1020 0%, #0d142b 45%, #0b1020 100%);
+  }
+}
+
+/* =========================================================
+   Surfaces & components
+   ========================================================= */
+.card-surface {
+  background-color: var(--color-card);
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  box-shadow:
+    0 1px 0 rgba(17, 24, 39, 0.03),
+    0 12px 24px -16px rgba(17, 24, 39, 0.25);
+}
+
+:where(button, a, input, select, textarea, [role="tab"], [role="switch"]) { outline: none; }
+:where(button, a, input, select, textarea, [role="tab"], [role="switch"]):focus-visible {
+  box-shadow: 0 0 0 3px var(--focus);
+}
+
+.muted-block {
+  background-color: var(--color-muted);
+  border: 1px dashed var(--color-border);
+  border-radius: calc(var(--radius) - 0.25rem);
+}
+
+/* Dropzone */
+.dropzone {
+  transition: background-color 160ms, border-color 160ms, transform 160ms;
+}
+.dropzone:hover {
+  background-color: color-mix(in oklab, var(--brand-400) 8%, var(--color-muted));
+  border-color: var(--ring);
+  transform: translateY(-1px);
+}
+
+/* Tabs list (biar kontras & modern) */
+[role="tablist"] {
+  background: color-mix(in oklab, var(--brand-400) 6%, var(--color-muted));
+  padding: 0.25rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+}
+[role="tab"][data-state="active"] {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 6px 18px -12px rgba(17,24,39,0.35);
+}
+
+/* Progress track lebih jelas */
+.progress {
+  --progress-bg: color-mix(in oklab, var(--brand-400) 15%, var(--color-muted));
 }
